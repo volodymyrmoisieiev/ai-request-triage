@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from types import SimpleNamespace
 
@@ -67,7 +68,7 @@ class SimpleNamespaceError(Exception):
 
 def test_successful_classification(monkeypatch) -> None:
     result = make_triage_result()
-    fake_models = FakeModels(response=SimpleNamespace(parsed=result))
+    fake_models = FakeModels(response=SimpleNamespace(text=result.model_dump_json()))
     FakeClient.models = fake_models
 
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
@@ -79,7 +80,10 @@ def test_successful_classification(monkeypatch) -> None:
     assert response == result
     assert FakeClient.api_key == "test-key"
     assert fake_models.called_with["model"] == DEFAULT_GEMINI_MODEL
-    assert fake_models.called_with["config"]["response_schema"] is TriageResult
+    assert fake_models.called_with["config"]["response_json_schema"] == (
+        TriageResult.model_json_schema()
+    )
+    assert "response_schema" not in fake_models.called_with["config"]
     assert fake_models.called_with["config"]["response_mime_type"] == "application/json"
     assert "Please automate the weekly report." in fake_models.called_with["contents"]
 
@@ -140,7 +144,34 @@ def test_api_error_messages_are_safe(monkeypatch, error, expected_message: str) 
 
 
 def test_invalid_structured_response(monkeypatch) -> None:
-    fake_models = FakeModels(response=SimpleNamespace(parsed={"category": "other"}))
+    fake_models = FakeModels(response=SimpleNamespace(text='{"category": "other"}'))
+    FakeClient.models = fake_models
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr("ai_request_triage.llm.genai.Client", FakeClient)
+
+    with pytest.raises(InvalidStructuredResponseError):
+        classify_request(make_input_request())
+
+
+def test_missing_response_text(monkeypatch) -> None:
+    fake_models = FakeModels(response=SimpleNamespace(text=""))
+    FakeClient.models = fake_models
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr("ai_request_triage.llm.genai.Client", FakeClient)
+
+    with pytest.raises(InvalidStructuredResponseError) as exc_info:
+        classify_request(make_input_request())
+
+    assert str(exc_info.value) == "Gemini did not return a valid TriageResult"
+
+
+def test_unknown_output_fields_are_rejected(monkeypatch) -> None:
+    data = make_triage_result().model_dump(mode="json")
+    data["extra_field"] = "not allowed"
+    response_text = json.dumps(data, ensure_ascii=False)
+    fake_models = FakeModels(response=SimpleNamespace(text=response_text))
     FakeClient.models = fake_models
 
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")

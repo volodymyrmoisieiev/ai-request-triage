@@ -3,6 +3,7 @@
 import os
 
 from google import genai
+from pydantic import ValidationError
 
 from ai_request_triage.exceptions import (
     GeminiClassificationError,
@@ -31,19 +32,24 @@ def classify_request(request: InputRequest) -> TriageResult:
             contents=build_triage_prompt(request),
             config={
                 "response_mime_type": "application/json",
-                "response_schema": TriageResult,
+                "response_json_schema": TriageResult.model_json_schema(),
             },
         )
     except Exception as exc:
         raise GeminiClassificationError(_format_gemini_error(exc)) from exc
 
-    parsed_response = getattr(response, "parsed", None)
-    if not isinstance(parsed_response, TriageResult):
+    response_text = getattr(response, "text", None)
+    if not response_text:
         raise InvalidStructuredResponseError(
             "Gemini did not return a valid TriageResult"
         )
 
-    return parsed_response
+    try:
+        return TriageResult.model_validate_json(response_text)
+    except ValidationError as exc:
+        raise InvalidStructuredResponseError(
+            "Gemini did not return a valid TriageResult"
+        ) from exc
 
 
 def _format_gemini_error(exc: Exception) -> str:
