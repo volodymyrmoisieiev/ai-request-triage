@@ -1,12 +1,6 @@
 """Manual smoke test for Gemini classification."""
 
 from datetime import datetime
-from pathlib import Path
-import sys
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SRC_PATH = PROJECT_ROOT / "src"
-sys.path.insert(0, str(SRC_PATH))
 
 from ai_request_triage.llm import classify_request
 from ai_request_triage.schemas import InputRequest
