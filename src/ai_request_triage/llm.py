@@ -35,7 +35,7 @@ def classify_request(request: InputRequest) -> TriageResult:
             },
         )
     except Exception as exc:
-        raise GeminiClassificationError("Gemini classification failed") from exc
+        raise GeminiClassificationError(_format_gemini_error(exc)) from exc
 
     parsed_response = getattr(response, "parsed", None)
     if not isinstance(parsed_response, TriageResult):
@@ -44,3 +44,36 @@ def classify_request(request: InputRequest) -> TriageResult:
         )
 
     return parsed_response
+
+
+def _format_gemini_error(exc: Exception) -> str:
+    status_code = _get_status_code(exc)
+    error_text = str(exc)
+
+    if (
+        status_code == 429
+        or "429" in error_text
+        or "RESOURCE_EXHAUSTED" in error_text
+    ):
+        return "Gemini rate limit or quota is exceeded"
+
+    if status_code == 503 or "503" in error_text:
+        return "Gemini service is temporarily unavailable"
+
+    return "Gemini API request failed"
+
+
+def _get_status_code(exc: Exception) -> int | None:
+    for attribute_name in ("status_code", "code"):
+        value = getattr(exc, attribute_name, None)
+        if isinstance(value, int):
+            return value
+
+    error = getattr(exc, "error", None)
+    if error is not None:
+        for attribute_name in ("status_code", "code"):
+            value = getattr(error, attribute_name, None)
+            if isinstance(value, int):
+                return value
+
+    return None

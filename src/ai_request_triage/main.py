@@ -11,7 +11,11 @@ from ai_request_triage.exceptions import (
     MissingInputFileError,
     MissingRequiredColumnsError,
 )
-from ai_request_triage.processor import ProcessedRequest, ProcessingStatus, process_requests
+from ai_request_triage.processor import (
+    ProcessedRequest,
+    ProcessingStatus,
+    process_requests,
+)
 from ai_request_triage.report import write_markdown_report, write_output_json
 
 
@@ -19,14 +23,24 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run AI request triage.")
     parser.add_argument("--input", default="input_requests.csv", help="Input CSV path.")
     parser.add_argument("--output-dir", default="output", help="Output directory.")
+    parser.add_argument(
+        "--request-delay",
+        type=float,
+        default=0.0,
+        help="Delay between requests in seconds.",
+    )
     return parser
 
 
-def run(input_path: str | Path, output_dir: str | Path) -> int:
+def run(
+    input_path: str | Path,
+    output_dir: str | Path,
+    request_delay: float = 0.0,
+) -> int:
     try:
         _ensure_gemini_api_key()
         requests = read_input_requests(input_path)
-        processed_requests = process_requests(requests)
+        processed_requests = process_requests(requests, delay_seconds=request_delay)
 
         output_directory = Path(output_dir)
         output_directory.mkdir(parents=True, exist_ok=True)
@@ -55,7 +69,11 @@ def run(input_path: str | Path, output_dir: str | Path) -> int:
 
 def main() -> int:
     args = build_parser().parse_args()
-    return run(input_path=args.input, output_dir=args.output_dir)
+    return run(
+        input_path=args.input,
+        output_dir=args.output_dir,
+        request_delay=args.request_delay,
+    )
 
 
 def _ensure_gemini_api_key() -> None:

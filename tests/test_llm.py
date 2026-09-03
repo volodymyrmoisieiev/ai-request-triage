@@ -59,6 +59,12 @@ class FakeClient:
         self.models = self.__class__.models
 
 
+class SimpleNamespaceError(Exception):
+    def __init__(self, status_code: int, message: str):
+        super().__init__(message)
+        self.status_code = status_code
+
+
 def test_successful_classification(monkeypatch) -> None:
     result = make_triage_result()
     fake_models = FakeModels(response=SimpleNamespace(parsed=result))
@@ -98,6 +104,39 @@ def test_api_failure(monkeypatch) -> None:
 
     with pytest.raises(GeminiClassificationError):
         classify_request(make_input_request())
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_message"),
+    [
+        (
+            SimpleNamespaceError(status_code=429, message="RESOURCE_EXHAUSTED key=secret"),
+            "Gemini rate limit or quota is exceeded",
+        ),
+        (
+            SimpleNamespaceError(status_code=503, message="raw service response"),
+            "Gemini service is temporarily unavailable",
+        ),
+        (
+            SimpleNamespaceError(status_code=500, message="raw service response"),
+            "Gemini API request failed",
+        ),
+    ],
+)
+def test_api_error_messages_are_safe(monkeypatch, error, expected_message: str) -> None:
+    fake_models = FakeModels(error=error)
+    FakeClient.models = fake_models
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr("ai_request_triage.llm.genai.Client", FakeClient)
+
+    with pytest.raises(GeminiClassificationError) as exc_info:
+        classify_request(make_input_request())
+
+    assert str(exc_info.value) == expected_message
+    assert "test-key" not in str(exc_info.value)
+    assert "raw service response" not in str(exc_info.value)
+    assert "secret" not in str(exc_info.value)
 
 
 def test_invalid_structured_response(monkeypatch) -> None:

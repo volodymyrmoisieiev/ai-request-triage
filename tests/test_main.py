@@ -46,7 +46,11 @@ def test_run_processes_csv_and_writes_outputs(tmp_path, monkeypatch, capsys) -> 
         encoding="utf-8",
     )
 
-    def fake_process_requests(requests: list[InputRequest]) -> list[ProcessedRequest]:
+    def fake_process_requests(
+        requests: list[InputRequest],
+        delay_seconds: float = 0.0,
+    ) -> list[ProcessedRequest]:
+        assert delay_seconds == 0.0
         return [
             make_processed_request(
                 requests[0],
@@ -133,7 +137,14 @@ def test_main_uses_argparse_values(tmp_path, monkeypatch) -> None:
         encoding="utf-8",
     )
 
-    def fake_process_requests(requests: list[InputRequest]) -> list[ProcessedRequest]:
+    received_delay = None
+
+    def fake_process_requests(
+        requests: list[InputRequest],
+        delay_seconds: float = 0.0,
+    ) -> list[ProcessedRequest]:
+        nonlocal received_delay
+        received_delay = delay_seconds
         return [
             make_processed_request(
                 requests[0],
@@ -155,11 +166,50 @@ def test_main_uses_argparse_values(tmp_path, monkeypatch) -> None:
             str(input_path),
             "--output-dir",
             str(output_dir),
+            "--request-delay",
+            "1.25",
         ],
     )
 
     exit_code = main()
 
     assert exit_code == 0
+    assert received_delay == 1.25
     assert (output_dir / "output.json").exists()
     assert (output_dir / "report.md").exists()
+
+
+def test_run_passes_request_delay(tmp_path, monkeypatch) -> None:
+    input_path = tmp_path / "requests.csv"
+    output_dir = tmp_path / "output"
+    received_delay = None
+    input_path.write_text(
+        "id,channel,timestamp,raw_text\n"
+        "REQ-001,Slack,2026-06-08 09:14,Automate the weekly report.\n",
+        encoding="utf-8",
+    )
+
+    def fake_process_requests(
+        requests: list[InputRequest],
+        delay_seconds: float = 0.0,
+    ) -> list[ProcessedRequest]:
+        nonlocal received_delay
+        received_delay = delay_seconds
+        return [
+            make_processed_request(
+                requests[0],
+                triage=make_triage_result(),
+                error=None,
+            )
+        ]
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(
+        "ai_request_triage.main.process_requests",
+        fake_process_requests,
+    )
+
+    exit_code = run(input_path=input_path, output_dir=output_dir, request_delay=2.0)
+
+    assert exit_code == 0
+    assert received_delay == 2.0
