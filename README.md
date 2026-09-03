@@ -69,6 +69,18 @@ python -m pip install -e .
 
 `GEMINI_MODEL` is optional. The default model is `gemini-3.7-flash`.
 
+Set the required API key in Windows PowerShell:
+
+```powershell
+$env:GEMINI_API_KEY="your_api_key_here"
+```
+
+You can also set the optional model override:
+
+```powershell
+$env:GEMINI_MODEL="gemini-3.7-flash"
+```
+
 Do not store a real API key in the repository.
 
 ## Run the Application
