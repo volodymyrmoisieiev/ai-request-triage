@@ -42,7 +42,7 @@ The app creates two files:
 Create a virtual environment:
 
 ```powershell
-py -3.11 -m venv .venv
+python -m venv .venv
 ```
 
 Activate it:
@@ -104,12 +104,17 @@ Run the container from Windows PowerShell:
 ```powershell
 docker run --rm `
   -e GEMINI_API_KEY=$env:GEMINI_API_KEY `
-  -e GEMINI_MODEL=$env:GEMINI_MODEL `
-  -v ${PWD}:/data `
+  -v "${PWD}:/data" `
   ai-request-triage `
   --input /data/input_requests.csv `
   --output-dir /data/output `
   --request-delay 2
+```
+
+`GEMINI_MODEL` can optionally be passed with:
+
+```powershell
+-e GEMINI_MODEL=$env:GEMINI_MODEL
 ```
 
 API keys are passed at runtime. They are not stored in the image.
