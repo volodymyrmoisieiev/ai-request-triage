@@ -139,7 +139,7 @@ Run tests:
 python -m pytest -v
 ```
 
-The current local test suite has 59 tests.
+The current local test suite has 61 tests.
 
 ## Real Validation
 
