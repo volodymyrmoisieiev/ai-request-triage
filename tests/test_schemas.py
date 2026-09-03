@@ -116,6 +116,11 @@ def test_invalid_category() -> None:
         make_triage_result(category="other")
 
 
+def test_unknown_triage_result_field() -> None:
+    with pytest.raises(ValidationError):
+        make_triage_result(extra_field="not allowed")
+
+
 def test_invalid_priority() -> None:
     with pytest.raises(ValidationError):
         make_triage_result(priority="urgent")

@@ -3,7 +3,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 
 class InputRequest(BaseModel):
@@ -46,6 +46,8 @@ class TriageStatus(str, Enum):
 
 class TriageResult(BaseModel):
     """Structured triage result for a request."""
+
+    model_config = ConfigDict(extra="forbid")
 
     category: TriageCategory
     target_department: str | None
