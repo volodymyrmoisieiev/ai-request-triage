@@ -11,3 +11,15 @@ class MissingRequiredColumnsError(ValueError):
 
 class InvalidCSVRowError(ValueError):
     """Raised when a CSV row cannot be validated."""
+
+
+class MissingGeminiAPIKeyError(ValueError):
+    """Raised when GEMINI_API_KEY is not configured."""
+
+
+class GeminiClassificationError(RuntimeError):
+    """Raised when Gemini classification fails."""
+
+
+class InvalidStructuredResponseError(ValueError):
+    """Raised when Gemini does not return a valid TriageResult."""
