@@ -1,0 +1,13 @@
+.git
+.venv
+venv
+env
+ENV
+__pycache__
+**/__pycache__/
+.pytest_cache
+.env
+input_requests.csv
+output
+*.pdf
+_Тестове завдання _ Junior AI Engineer _ Internal _ June 2026.pdf
