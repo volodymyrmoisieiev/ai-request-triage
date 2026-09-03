@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
+import time
 
 from pydantic import BaseModel
 
@@ -26,12 +27,21 @@ class ProcessedRequest(BaseModel):
     error: str | None
 
 
-def process_requests(requests: list[InputRequest]) -> list[ProcessedRequest]:
+def process_requests(
+    requests: list[InputRequest],
+    delay_seconds: float = 0.0,
+) -> list[ProcessedRequest]:
     """Classify input requests one by one."""
 
-    processed_requests: list[ProcessedRequest] = []
+    if delay_seconds < 0:
+        raise ValueError("delay_seconds must not be negative")
 
-    for request in requests:
+    processed_requests: list[ProcessedRequest] = []
+    total_requests = len(requests)
+
+    for index, request in enumerate(requests):
+        print(f"Processing {index + 1}/{total_requests}: {request.id}")
+
         try:
             triage = classify_request(request)
         except Exception as exc:
@@ -46,6 +56,7 @@ def process_requests(requests: list[InputRequest]) -> list[ProcessedRequest]:
                     error=_format_error(exc),
                 )
             )
+            _sleep_between_requests(index, total_requests, delay_seconds)
             continue
 
         processed_requests.append(
@@ -59,8 +70,18 @@ def process_requests(requests: list[InputRequest]) -> list[ProcessedRequest]:
                 error=None,
             )
         )
+        _sleep_between_requests(index, total_requests, delay_seconds)
 
     return processed_requests
+
+
+def _sleep_between_requests(
+    index: int,
+    total_requests: int,
+    delay_seconds: float,
+) -> None:
+    if delay_seconds > 0 and index < total_requests - 1:
+        time.sleep(delay_seconds)
 
 
 def _format_error(exc: Exception) -> str:
