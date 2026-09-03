@@ -78,6 +78,10 @@ def test_successful_classification(monkeypatch) -> None:
     assert "Please automate the weekly report." in fake_models.called_with["contents"]
 
 
+def test_default_gemini_model() -> None:
+    assert DEFAULT_GEMINI_MODEL == "gemini-3.7-flash"
+
+
 def test_missing_api_key(monkeypatch) -> None:
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
 

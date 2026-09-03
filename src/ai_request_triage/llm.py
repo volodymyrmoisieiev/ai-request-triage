@@ -12,7 +12,7 @@ from ai_request_triage.exceptions import (
 from ai_request_triage.prompts import build_triage_prompt
 from ai_request_triage.schemas import InputRequest, TriageResult
 
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+DEFAULT_GEMINI_MODEL = "gemini-3.7-flash"
 
 
 def classify_request(request: InputRequest) -> TriageResult:
