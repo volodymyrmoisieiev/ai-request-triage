@@ -12,6 +12,10 @@ ENV/
 # Environment files
 .env
 
+# Local assignment files
+input_requests.csv
+
+
 # Build artifacts
 build/
 dist/
