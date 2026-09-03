@@ -15,6 +15,9 @@ ENV/
 # Local assignment files
 input_requests.csv
 
+# Generated output files
+output/*
+!output/.gitkeep
 
 # Build artifacts
 build/
